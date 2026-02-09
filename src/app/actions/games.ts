@@ -1,12 +1,10 @@
 "use server";
-
 import { prisma } from "../../lib/prisma/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import type { GameStatus, Platform } from "../../generated/prisma";
 
-
-// Structure des informations envoyées par le formulaire
+// Forme attendue pour créer/modifier un jeu
 export interface GameFormData {
   title: string;
   platform: Platform;
@@ -16,7 +14,8 @@ export interface GameFormData {
   isPublic?: boolean;
 }
 
-// Vérifie que l’utilisateur est connecté
+
+// Vérifie la session Clerk et retourne l’ID utilisateur
 async function requireUserId() {
   const { userId } = await auth();
   if (!userId) throw new Error("Not authenticated");
@@ -24,7 +23,7 @@ async function requireUserId() {
 }
 
 
-// ADD: Ajoute un jeu pour l’utilisateur courant
+// CREATE: Ajoute un jeu lié à l’utilisateur courant puis revalide le dashboard
 export async function addGame(data: GameFormData) {
   const userId = await requireUserId();
 
@@ -43,7 +42,8 @@ export async function addGame(data: GameFormData) {
   revalidatePath("/dashboard");
 }
 
-// GET: Récupère la collection personnelle de l’utilisateur.
+
+// GET : Récupère tous les jeux de l’utilisateur connecté
 export async function getUserGames() {
   const userId = await requireUserId();
 
@@ -53,7 +53,8 @@ export async function getUserGames() {
   });
 }
 
-// DELETE: Supprime un jeu seulement s’il appartient à l’utilisateur
+
+// DELETE : Supprime un jeu seulement s’il appartient à l’utilisateur
 export async function deleteGame(gameId: number) {
   const userId = await requireUserId();
 
@@ -64,7 +65,8 @@ export async function deleteGame(gameId: number) {
   revalidatePath("/dashboard");
 }
 
-// UPDATE: Modifie les informations d’un jeu existant
+
+// UPDATE : met à jour un jeu de l’utilisateur 
 export async function updateGame(gameId: number, data: Partial<GameFormData>) {
   const userId = await requireUserId();
 
@@ -73,20 +75,14 @@ export async function updateGame(gameId: number, data: Partial<GameFormData>) {
 
   await prisma.game.update({
     where: { id: gameId },
-    data: {
-      ...(data.title !== undefined ? { title: data.title.trim() } : {}),
-      ...(data.platform !== undefined ? { platform: data.platform } : {}),
-      ...(data.status !== undefined ? { status: data.status } : {}),
-      ...(data.rating !== undefined ? { rating: data.rating } : {}),
-      ...(data.imageUrl !== undefined ? { imageUrl: data.imageUrl } : {}),
-      ...(data.isPublic !== undefined ? { isPublic: data.isPublic } : {}),
-    },
+    data,
   });
 
   revalidatePath("/dashboard");
 }
 
-// Retourne les jeux visibles par tous pour la page d’exploration
+
+// GET: Récupère les jeux publics pour la page Explore
 export async function getPublicGames() {
   return prisma.game.findMany({
     where: { isPublic: true },
