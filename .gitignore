@@ -23,6 +23,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+
+# environment variables
 .env
 .env*.local
 
@@ -36,3 +38,8 @@ next-env.d.ts
 # prisma
 /generated/prisma
 /src/generated/prisma
+# next build output
+.next
+
+# prisma generated client
+src/generated
