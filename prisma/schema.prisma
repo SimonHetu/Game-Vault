@@ -37,3 +37,11 @@ model Game {
 
   @@index([userId])
 }
+
+model Comment {
+  id            Int        @id @default(autoincrement())
+  contenu       String
+  userId        Int
+  targetUserId  Int
+  createdAt     DateTime
+}
